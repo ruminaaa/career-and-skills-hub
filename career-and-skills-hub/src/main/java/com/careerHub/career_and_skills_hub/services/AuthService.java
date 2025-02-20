@@ -30,14 +30,15 @@ public class AuthService implements UserDetailsService {
 
     // Register method
     public AuthResponse register(RegisterRequest request) {
-        User user = new User(request.getName(),request.getEmail(), passwordEncoder.encode(request.getPassword()));
+        User user = new User(request.getName(), request.getEmail(), passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);
 
-        // Generate JWT token
-        String token = jwtService.generateToken(user.getEmail());
+        // Fix: Pass name as well
+        String token = jwtService.generateToken(user.getEmail(), user.getUsername());
 
         return new AuthResponse(token);
     }
+
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -46,15 +47,16 @@ public class AuthService implements UserDetailsService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
-        String token = jwtService.generateToken(user.getEmail());
+        // Fix: Pass name as well
+        String token = jwtService.generateToken(user.getEmail(), user.getUsername());
 
-        // Return AuthResponse with token
         return new AuthResponse(token);
     }
 
 
+
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String name) throws UsernameNotFoundException {
         return null;
     }
 }

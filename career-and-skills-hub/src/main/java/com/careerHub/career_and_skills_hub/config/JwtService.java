@@ -10,28 +10,35 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    @Value("${jwt.secret}")
-    private static final String SECRET_KEY = "bG93ZXJpbnN0ZXJkZWZhdWx0c2VjcmV0a2V5MTIz";
+
+    @Value("${jwt.secret}") // ✅ Inject the secret key from application.properties
+    private String secretKey;
 
     private Key getSignKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        return Keys.hmacShaKeyFor(secretKey.getBytes());
+    }
+    public String extractEmail(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+    public String extractName(String token) {
+        return extractClaim(token, claims -> claims.get("name", String.class));
     }
 
-    public String generateToken(String email) {
+    public String generateToken(String email, String name) {
         return Jwts.builder()
-                .setSubject(email)
+                .claim("name", name)  // Store name in token
+                .setSubject(email)     // Store email in subject
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extractEmail(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
+
+
 
     public boolean isTokenValid(String token, String userEmail) {
-        return extractEmail(token).equals(userEmail) && !isTokenExpired(token);
+        return extractName(token).equals(userEmail) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {

@@ -32,36 +32,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // If no Authorization header or doesn't start with Bearer, skip filter
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             chain.doFilter(request, response);
             return;
         }
 
-        // Extract token
         String token = authHeader.substring(7);
         String email = jwtService.extractEmail(token);
+        String name = jwtService.extractName(token);
 
-        // If token is invalid or email is null, skip authentication
-        if (email == null || SecurityContextHolder.getContext().getAuthentication() != null) {
+        if ((email == null && name == null) || SecurityContextHolder.getContext().getAuthentication() != null) {
             chain.doFilter(request, response);
             return;
         }
 
-        // Load user details from database
-        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        UserDetails userDetails = null;
+        if (email != null) {
+            userDetails = userDetailsService.loadUserByUsername(email);
+        } else if (name != null) {
+            userDetails = userDetailsService.loadUserByUsername(name);
+        }
 
-        // Validate token and authenticate user
-        if (jwtService.isTokenValid(token, userDetails.getUsername())) {
+        if (userDetails != null && jwtService.isTokenValid(token, userDetails.getUsername())) {
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
             SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 
-        // Continue filter chain
         chain.doFilter(request, response);
     }
+
 }
