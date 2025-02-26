@@ -38,14 +38,12 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/auth/**").permitAll()  // Allow authentication routes
-                                .requestMatchers("/api/careers/recommend").permitAll() // Allow AI Recommendation API
-                                .anyRequest().authenticated() // Allow all requests for testing
-// Require authentication for other routes
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/auth/**").permitAll() // Allow authentication routes
+                        .requestMatchers("/api/careers/recommend").permitAll() // Allow AI Recommendation API
+                        .requestMatchers("/api/resume-analyzer/analyze").permitAll() // ✅ Allow Resume Analyzer API
+                        .anyRequest().authenticated() // Require authentication for other routes
                 )
-
-
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Use stateless JWT authentication
                 )
@@ -58,16 +56,13 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:4200", "http://127.0.0.1:5000")); // Frontend & Flask
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true); // Allow credentials
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
-
-
 
     @Bean
     public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
@@ -80,7 +75,6 @@ public class SecurityConfig {
         return providerManager;
     }
 
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -91,4 +85,5 @@ public class SecurityConfig {
         return email -> userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
 }
