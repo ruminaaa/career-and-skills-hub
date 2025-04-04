@@ -8,13 +8,15 @@ import com.careerHub.career_and_skills_hub.entity.User;
 import com.careerHub.career_and_skills_hub.repositories.UserRepository;
 import com.careerHub.career_and_skills_hub.services.AuthService;
 import com.careerHub.career_and_skills_hub.config.JwtService;
+import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:5000"})
 @RequestMapping("/auth")
 public class AuthController {
     private final AuthService authService;
@@ -50,6 +52,21 @@ public class AuthController {
             return ResponseEntity.ok(user.get()); // Return user details
         } else {
             return ResponseEntity.status(404).body("User not found");
-        }
+        }}
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    @GetMapping("/validate")
+    public ResponseEntity<Void> validateToken(@RequestHeader("Authorization") String token) {
+            try {
+                token = token.replace("Bearer ", "");
+                Jwts.parserBuilder()
+                        .setSigningKey(jwtSecret.getBytes())
+                        .build()
+                        .parseClaimsJws(token);
+                return ResponseEntity.ok().build();
+            } catch (Exception e) {
+                return ResponseEntity.status(401).build();
+            }}
     }
-}
